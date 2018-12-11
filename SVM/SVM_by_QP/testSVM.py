@@ -1,5 +1,6 @@
-from SVCQP import *
 import pylab as pl
+import numpy as np
+from SVCQP import SVM
 
 def gen_lin_separable_data():
     # generate training data in the 2-d case
@@ -108,7 +109,7 @@ def test_linear():
 
     y_predict = clf.predict(X_test)
     correct = np.sum(y_predict == y_test)
-    print "%d out of %d predictions correct" % (correct, len(y_predict))
+    print ("%d out of %d predictions correct" % (correct, len(y_predict)))
 
     plot_margin(X_train[y_train==1], X_train[y_train==-1], clf)
 
@@ -126,7 +127,7 @@ def test_non_linear():
 
     y_predict = clf.predict(X_test)
     correct = np.sum(y_predict == y_test)
-    print "%d out of %d predictions correct" % (correct, len(y_predict))
+    print ("%d out of %d predictions correct" % (correct, len(y_predict)))
 
     plot_contour(X_train[y_train==1], X_train[y_train==-1], clf)
 
@@ -142,7 +143,7 @@ def test_soft():
 
     y_predict = clf.predict(X_test)
     correct = np.sum(y_predict == y_test)
-    print "%d out of %d predictions correct" % (correct, len(y_predict))
+    print ("%d out of %d predictions correct" % (correct, len(y_predict)))
 
     plot_contour(X_train[y_train==1], X_train[y_train==-1], clf)
 

@@ -15,7 +15,7 @@
    http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
 
 """
-import cPickle
+import pickleshare
 import gzip
 import os
 import sys
@@ -237,17 +237,17 @@ def load_data(dataset):
         origin = (
             'http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz'
         )
-        print 'Downloading data from %s' % origin
+        print ('Downloading data from %s' % origin)
         urllib.urlretrieve(origin, dataset)
 
-    print '... loading data'
+    print ('... loading data')
 #以上是检测并下载数据集mnist.pkl.gz，不是本文重点。下面才是load_data的开始
     
 #从"mnist.pkl.gz"里加载train_set, valid_set, test_set，它们都是包括label的
 #主要用到python里的gzip.open()函数,以及 cPickle.load()。
 #‘rb’表示以二进制可读的方式打开文件
     f = gzip.open(dataset, 'rb')
-    train_set, valid_set, test_set = cPickle.load(f)
+    train_set, valid_set, test_set = pickleshare.load(f)
     f.close()
    
 
@@ -312,7 +312,7 @@ def evaluate_lenet5(learning_rate=0.1, n_epochs=200,
     ######################
     # BUILD ACTUAL MODEL #
     ######################
-    print '... building the model'
+    print ('... building the model')
 
 
 #我们加载进来的batch大小的数据是(batch_size, 28 * 28)，但是LeNetConvPoolLayer的输入是四维的，所以要reshape
@@ -416,7 +416,7 @@ def evaluate_lenet5(learning_rate=0.1, n_epochs=200,
     ###############
     #   开始训练  #
     ###############
-    print '... training'
+    print ('... training')
     patience = 10000  
     patience_increase = 2  
     improvement_threshold = 0.995 
@@ -442,19 +442,19 @@ def evaluate_lenet5(learning_rate=0.1, n_epochs=200,
 #当达到最大步数n_epoch时，或者patience<iter时，结束训练
     while (epoch < n_epochs) and (not done_looping):
         epoch = epoch + 1
-        for minibatch_index in xrange(n_train_batches):
+        for minibatch_index in range(n_train_batches):
 
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
             if iter % 100 == 0:
-                print 'training @ iter = ', iter
+                print ('training @ iter = ', iter)
             cost_ij = train_model(minibatch_index)  
 #cost_ij 没什么用，后面都没有用到,只是为了调用train_model，而train_model有返回值
             if (iter + 1) % validation_frequency == 0:
 
                 # compute zero-one loss on validation set
                 validation_losses = [validate_model(i) for i
-                                     in xrange(n_valid_batches)]
+                                     in range(n_valid_batches)]
                 this_validation_loss = numpy.mean(validation_losses)
                 print('epoch %i, minibatch %i/%i, validation error %f %%' %
                       (epoch, minibatch_index + 1, n_train_batches,
@@ -475,7 +475,7 @@ def evaluate_lenet5(learning_rate=0.1, n_epochs=200,
                    
                     test_losses = [
                         test_model(i)
-                        for i in xrange(n_test_batches)
+                        for i in range(n_test_batches)
                     ]
                     test_score = numpy.mean(test_losses)
                     print(('     epoch %i, minibatch %i/%i, test error of '

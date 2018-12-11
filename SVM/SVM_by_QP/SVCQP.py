@@ -66,7 +66,7 @@ class SVM(object):
         self.a = a[sv]
         self.sv = X[sv]
         self.sv_y = y[sv]
-        print "%d support vectors out of %d points" % (len(self.a), n_samples)
+        print ("%d support vectors out of %d points" % (len(self.a), n_samples))
 
         # Intercept
         self.b = 0
@@ -97,4 +97,3 @@ class SVM(object):
 
     def predict(self, X):
         return np.sign(self.project(X))
-

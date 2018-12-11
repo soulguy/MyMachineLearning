@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This tutorial introduces logistic regression using Theano and stochastic
 gradient descent.
@@ -31,24 +30,25 @@ References:
 
     - textbooks: "Pattern Recognition and Machine Learning" -
                  Christopher M. Bishop, section 4.3.2
-注释：
-Softmax，其实就是多类别的逻辑回归，它的假设函数跟逻辑回归稍微不同，代价函数本质是一样的，采样NLL，优化算法采用Minibatch-随机梯度下降，即MSGD，每训练完一个minibatch之后才更新参数。
 
 """
+
+from __future__ import print_function
+
 __docformat__ = 'restructedtext en'
 
-import pickle
+import six.moves.cPickle as pickle
 import gzip
 import os
 import sys
-import time
+import timeit
 
 import numpy
 
 import theano
 import theano.tensor as T
 
-#逻辑回归结构模型
+
 class LogisticRegression(object):
     """Multi-class Logistic Regression Class
 
@@ -84,7 +84,7 @@ class LogisticRegression(object):
             name='W',
             borrow=True
         )
-        # initialize the baises b as a vector of n_out 0s
+        # initialize the biases b as a vector of n_out 0s
         self.b = theano.shared(
             value=numpy.zeros(
                 (n_out,),
@@ -93,25 +93,27 @@ class LogisticRegression(object):
             name='b',
             borrow=True
         )
-        #n_in,输入的维度，n_out输出的维度。W大小时n_in行n_out列，b大小为n_out维向量。即：每个输出对应W的一列以及b的一个元素。WX+b
 
         # symbolic expression for computing the matrix of class-membership
         # probabilities
         # Where:
-        # W is a matrix where column-k represent the separation hyper plain for
+        # W is a matrix where column-k represent the separation hyperplane for
         # class-k
         # x is a matrix where row-j  represents input training sample-j
-        # b is a vector where element-k represent the free parameter of hyper
-        # plain-k
+        # b is a vector where element-k represent the free parameter of
+        # hyperplane-k
         self.p_y_given_x = T.nnet.softmax(T.dot(input, self.W) + self.b)
-        #input是(n_example,n_in)，W是（n_in,n_out）,点乘得到(n_example,n_out)，故p_y_given_x每一行代表每一个样本被估计为各类别的概率
+
         # symbolic description of how to compute prediction as class whose
         # probability is maximal
         self.y_pred = T.argmax(self.p_y_given_x, axis=1)
         # end-snippet-1
-        #argmax返回最大值下标，因为本例数据集是MNIST，下标刚好就是类别。axis=1表示按行？
+
         # parameters of the model
         self.params = [self.W, self.b]
+
+        # keep track of model input
+        self.input = input
 
     def negative_log_likelihood(self, y):
         """Return the mean of the negative log-likelihood of the prediction
@@ -144,8 +146,7 @@ class LogisticRegression(object):
         # i.e., the mean log-likelihood across the minibatch.
         return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
         # end-snippet-2
-    #y大小是(n_example,1),y.shape[0]得出行数即样本数，LP[T.arange(y.shape[0]),y]得到[LP[0,y[0]], LP[1,y[1]], LP[2,y[2]], ...,LP[n-1,y[n-1]]]
-    #最后求均值mean，也就是说，minibatch的SGD，是计算出batch里所有样本的NLL的平均值，作为它的cost
+
     def errors(self, y):
         """Return a float representing the number of errors in the minibatch
         over the total number of examples of the minibatch ; zero one
@@ -196,30 +197,28 @@ def load_data(dataset):
             dataset = new_path
 
     if (not os.path.isfile(dataset)) and data_file == 'mnist.pkl.gz':
-        import urllib
+        from six.moves import urllib
         origin = (
             'http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz'
         )
         print('Downloading data from %s' % origin)
-        urllib.urlretrieve(origin, dataset)
+        urllib.request.urlretrieve(origin, dataset)
 
     print('... loading data')
-    #以上是下载数据集mnist.pkl.gz，可以忽略
 
-    #从mnist.pkl.gz里加载train_set, valid_set, test_set
     # Load the dataset
-    f = gzip.open(dataset, 'rb')
-    train_set, valid_set, test_set = pickle.load(f)
-    f.close()
-    #train_set, valid_set, test_set format: tuple(input, target)
-    #input is an numpy.ndarray of 2 dimensions (a matrix)
-    #witch row's correspond to an example. target is a
-    #numpy.ndarray of 1 dimensions (vector)) that have the same length as
-    #the number of rows in the input. It should give the target
-    #target to the example with the same index in the input.
+    with gzip.open(dataset, 'rb') as f:
+        try:
+            train_set, valid_set, test_set = pickle.load(f, encoding='latin1')
+        except:
+            train_set, valid_set, test_set = pickle.load(f)
+    # train_set, valid_set, test_set format: tuple(input, target)
+    # input is a numpy.ndarray of 2 dimensions (a matrix)
+    # where each row corresponds to an example. target is a
+    # numpy.ndarray of 1 dimension (vector) that has the same length as
+    # the number of rows in the input. It should give the target
+    # to the example with the same index in the input.
 
-    #将数据设置成shared variables，主要时为了GPU加速，只有shared variables才能存到GPU memory中
-    #GPU里数据类型只能是float。而y是类别，所以最后又转换为int返回
     def shared_dataset(data_xy, borrow=True):
         """ Function that loads the dataset into shared variables
 
@@ -244,7 +243,6 @@ def load_data(dataset):
         # ``shared_y`` we will have to cast it to int. This little hack
         # lets ous get around this issue
         return shared_x, T.cast(shared_y, 'int32')
-
 
     test_set_x, test_set_y = shared_dataset(test_set)
     valid_set_x, valid_set_y = shared_dataset(valid_set)
@@ -281,19 +279,17 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
     test_set_x, test_set_y = datasets[2]
-    #计算有多少个minibatch，因为我们的优化算法是MSGD，是一个batch一个batch来计算cost的
+
     # compute number of minibatches for training, validation and testing
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_test_batches = test_set_x.get_value(borrow=True).shape[0] / batch_size
+    n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
+    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
+    n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
 
     ######################
     # BUILD ACTUAL MODEL #
     ######################
-    print ('... building the model')
+    print('... building the model')
 
-
-    #设置变量符号，index表示minibatch的下标，x表示训练样本，y是对应的标签
     # allocate symbolic variables for the data
     index = T.lscalar()  # index to a [mini]batch
 
@@ -305,12 +301,10 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     # construct the logistic regression class
     # Each MNIST image has size 28*28
     classifier = LogisticRegression(input=x, n_in=28 * 28, n_out=10)
-    #定义一个分类器，用x作为input初始化
 
     # the cost we minimize during training is the negative log likelihood of
     # the model in symbolic format
     cost = classifier.negative_log_likelihood(y)
-    #定义一个代价函数，用y来初始化，而其实还有一个隐含的参数x在classifier中。这样理解才是合理的，因为cost必须由x和y得来，单单y是得不到cost的。
 
     # compiling a Theano function that computes the mistakes that are made by
     # the model on a minibatch
@@ -322,11 +316,6 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
             y: test_set_y[index * batch_size: (index + 1) * batch_size]
         }
     )
-    #这里必须理解一下theano的function函数，givens是字典，其中的x、y是key，冒号后面是它们的value。在function被调用时，x、y将被具体地替换为它们的 
-    #value，而#value里的参数index就是inputs=[index]这里给出。比如test_model(1)，首先根据index=1具体化x为test_set_x[1 * batch_size: (1 + 1) * 
-    #  batch_size]，
-    #具体化y为test_set_y[1 * batch_size: (1 + 1) * batch_size]。然后函数计算outputs=classifier.errors(y)，这里面有参数y和隐含的x，
-    #所以就将givens里面具#体化的x、y传递进去。
 
     validate_model = theano.function(
         inputs=[index],
@@ -336,7 +325,8 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
             y: valid_set_y[index * batch_size: (index + 1) * batch_size]
         }
     )
-    
+
+    # compute the gradient of cost with respect to theta = (W,b)
     g_W = T.grad(cost=cost, wrt=classifier.W)
     g_b = T.grad(cost=cost, wrt=classifier.b)
 
@@ -345,7 +335,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     # (variable, update expression) pairs.
     updates = [(classifier.W, classifier.W - learning_rate * g_W),
                (classifier.b, classifier.b - learning_rate * g_b)]
-    #更新的规则，列表。
+
     # compiling a Theano function `train_model` that returns the cost, but in
     # the same time updates the parameter of the model based on the rules
     # defined in `updates`
@@ -359,7 +349,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
         }
     )
     # end-snippet-3
-    #train_model跟上面分析的test_model类似，只是这里面多了updatas，更新规则用上面定义的updates 列表。
+
     ###############
     # TRAIN MODEL #
     ###############
@@ -370,7 +360,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
                                   # found
     improvement_threshold = 0.995  # a relative improvement of this much is
                                   # considered significant
-    validation_frequency = min(n_train_batches, patience / 2)
+    validation_frequency = min(n_train_batches, patience // 2)
                                   # go through this many
                                   # minibatche before checking the network
                                   # on the validation set; in this case we
@@ -378,7 +368,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
     best_validation_loss = numpy.inf
     test_score = 0.
-    start_time = time.clock()
+    start_time = timeit.default_timer()
 
     done_looping = False
     epoch = 0
@@ -433,16 +423,15 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
                         )
                     )
 
+                    # save the best model
+                    with open('best_model.pkl', 'wb') as f:
+                        pickle.dump(classifier, f)
+
             if patience <= iter:
                 done_looping = True
                 break
-#如果遍历完所有的minibatch，但是还没有running out of patience,则重头开始遍历minibatch，进入新的训练步数epoch。
 
-#The validation_frequency should always be smaller than the patience. The code should check at least two times how it performs before running out of patience. This is the reason we used the formulation validation_frequency = min( value, patience/2.)
-
-#我们上面更新patience只是通过简单的比较，事实上可以使用更好的方法。
-
-    end_time = time.clock()
+    end_time = timeit.default_timer()
     print(
         (
             'Optimization complete with best validation score of %f %%,'
@@ -450,9 +439,37 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
         )
         % (best_validation_loss * 100., test_score * 100.)
     )
-    print ('The code run for %d epochs, with %f epochs/sec' % (
+    print('The code run for %d epochs, with %f epochs/sec' % (
         epoch, 1. * epoch / (end_time - start_time)))
-    print  (sys.stderr, ('The code for file ' +os.path.split(__file__)[1] +' ran for %.1fs' % (end_time - start_time)))
+    print(('The code for file ' +
+           os.path.split(__file__)[1] +
+           ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
+
+
+def predict():
+    """
+    An example of how to load a trained model and use it
+    to predict labels.
+    """
+
+    # load the saved model
+    classifier = pickle.load(open('best_model.pkl'))
+
+    # compile a predictor function
+    predict_model = theano.function(
+        inputs=[classifier.input],
+        outputs=classifier.y_pred)
+
+    # We can test it on some examples from test test
+    dataset='mnist.pkl.gz'
+    datasets = load_data(dataset)
+    test_set_x, test_set_y = datasets[2]
+    test_set_x = test_set_x.get_value()
+
+    predicted_values = predict_model(test_set_x[:10])
+    print("Predicted values for the first 10 examples in test set:")
+    print(predicted_values)
+
 
 if __name__ == '__main__':
     sgd_optimization_mnist()

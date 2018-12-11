@@ -1,7 +1,9 @@
 from __future__ import division, print_function
+from SVCSMO import SVCSMO
 import csv, os, sys
 import numpy as np
-from SVCSMO import SVCSMO
+
+
 filepath = os.path.dirname(os.path.abspath(__file__))
 
 def readData(filename, header=True):

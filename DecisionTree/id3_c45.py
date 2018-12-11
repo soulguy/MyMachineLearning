@@ -213,7 +213,8 @@ class DecisionTree:
             _classify()一次只能对一个样本（sample）分类
             To Do: 多个sample的预测怎样并行化？
             """
-            featIndex = tree.keys()[0]
+            Index = list(tree.keys())
+            featIndex = Index[0]
             secondDict = tree[featIndex]
             key = sample[int(featIndex[1:])]
             valueOfkey = secondDict[key]
