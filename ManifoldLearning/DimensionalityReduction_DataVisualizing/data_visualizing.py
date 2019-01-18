@@ -16,7 +16,7 @@ from sklearn import (manifold, datasets, decomposition, ensemble, lda,random_pro
 digits = datasets.load_digits(n_class=5)
 X = digits.data
 y = digits.target
-print X.shape
+print (X.shape)
 n_img_per_row = 20
 img = np.zeros((10 * n_img_per_row, 10 * n_img_per_row))
 for i in range(n_img_per_row):
@@ -177,7 +177,7 @@ print("Computing t-SNE embedding")
 tsne = manifold.TSNE(n_components=3, init='pca', random_state=0)
 t0 = time()
 X_tsne = tsne.fit_transform(X)
-print X_tsne.shape
+print (X_tsne.shape)
 plot_embedding_2d(X_tsne[:,0:2],"t-SNE 2D")
 plot_embedding_3d(X_tsne,"t-SNE 3D (time %.2fs)" %(time() - t0))
 

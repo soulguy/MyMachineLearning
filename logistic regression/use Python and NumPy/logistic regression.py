@@ -70,16 +70,16 @@ def classfy(testdir,weigh):
     error=0.0
     for i in range(m):
         if int(h[i])>0.5:
-            print int(labelMat[i]),'is classfied as: 1'
+            print (int(labelMat[i]),'is classfied as: 1')
             if int(labelMat[i])!=1:
                 error+=1
-                print 'error'
+                print ('error')
         else:
-            print int(labelMat[i]),'is classfied as: 0'
+            print (int(labelMat[i]),'is classfied as: 0')
             if int(labelMat[i])!=0:
                 error+=1
-                print 'error'
-    print 'error rate is:','%.4f' %(error/m)
+                print ('error')
+    print ('error rate is:','%.4f' %(error/m))
                 
 def digitRecognition(trainDir,testDir,alpha=0.07,maxCycles=10):
     data,label=loadData(trainDir)
